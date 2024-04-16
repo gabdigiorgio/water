@@ -1,66 +1,63 @@
+### Linux ###
+*~
 
-#Ignore thumbnails created by Windows
+### macOS ###
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+### Windows ###
+# Windows thumbnail cache files
 Thumbs.db
-#Ignore files built by Visual Studio
-*.obj
-*.exe
-*.pdb
-*.user
-*.aps
-*.pch
-*.vspscc
-*_i.c
-*_p.c
-*.ncb
-*.suo
-*.tlb
-*.tlh
-*.bak
-*.cache
-*.ilk
-*.log
-[Bb]in
-[Dd]ebug*/
-*.lib
-*.sbr
-obj/
-[Rr]elease*/
-_ReSharper*/
-[Tt]est[Rr]esult*
-.vs/
-#Nuget packages folder
-packages/
-# Common IntelliJ Platform excludes
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
 
-# User specific
-**/.idea/**/workspace.xml
-**/.idea/**/tasks.xml
-**/.idea/shelf/*
-**/.idea/dictionaries
-**/.idea/httpRequests/
+# Folder config file
+[Dd]esktop.ini
 
-# Sensitive or high-churn files
-**/.idea/**/dataSources/
-**/.idea/**/dataSources.ids
-**/.idea/**/dataSources.xml
-**/.idea/**/dataSources.local.xml
-**/.idea/**/sqlDataSources.xml
-**/.idea/**/dynamic.xml
+# Windows shortcuts
+*.lnk
 
-# Rider
-# Rider auto-generates .iml files, and contentModel.xml
-**/.idea/**/*.iml
-**/.idea/**/contentModel.xml
-**/.idea/**/modules.xml
-
-*.suo
-*.user
-.vs/
+### DotnetCore ###
+# .NET Core build folders
 [Bb]in/
 [Oo]bj/
-_UpgradeReport_Files/
-[Pp]ackages/
 
-Thumbs.db
-Desktop.ini
-.DS_Store
+# Common node modules locations
+/node_modules
+/wwwroot/node_modules
+
+### VisualStudioCode ###
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+
+### VisualStudio ###
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+
+# Rider
+.idea/
+*.iml
+*.ipr
