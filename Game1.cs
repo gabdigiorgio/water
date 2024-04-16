@@ -87,7 +87,7 @@ namespace Water
             _blinnPhongShader = Content.Load<Effect>(ContentFolderEffects + "BlinnPhong");
             
             _waterShader = Content.Load<Effect>(ContentFolderEffects + "Water");
-            _waveTexture = Content.Load<Texture2D>(ContentFolderTextures + "wave0_normal");
+            _waveTexture = Content.Load<Texture2D>(ContentFolderTextures + "wave1_normal");
             
             base.LoadContent();
         }
@@ -157,6 +157,9 @@ namespace Water
                 
         private void DrawWater(Matrix world, Matrix view, Matrix projection, Matrix reflectionView, GameTime gameTime)
         {
+            var previousRasterizerState = GraphicsDevice.RasterizerState;
+            GraphicsDevice.RasterizerState = RasterizerState.CullNone;
+            
             _waterShader.CurrentTechnique = _waterShader.Techniques["Water"];
 
             _waterShader.Parameters["World"].SetValue(world);
@@ -181,9 +184,11 @@ namespace Water
             _waterShader.Parameters["EyePosition"].SetValue(_freeCamera.Position);
             
             _waterShader.Parameters["Time"].SetValue((float)gameTime.TotalGameTime.TotalSeconds);
-            _waterShader.Parameters["ScaleTimeFactor"].SetValue(5f);
+            _waterShader.Parameters["ScaleTimeFactor"].SetValue(15f);
             
             _quad.Draw(_waterShader);
+            
+            GraphicsDevice.RasterizerState = previousRasterizerState;
         }
         
         private void DrawTeapot(Matrix world, Matrix view, Matrix projection, Vector3 position)
