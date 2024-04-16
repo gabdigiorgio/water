@@ -37,7 +37,6 @@ namespace Water
         private QuadPrimitive _quad;
         private Matrix _quadWorld;
         private Effect _waterShader;
-        private Texture2D _waterTexture;
         private Texture2D _waveTexture;
 
         public Game1()
@@ -81,7 +80,6 @@ namespace Water
             _blinnPhongShader = Content.Load<Effect>(ContentFolderEffects + "BlinnPhong");
             
             _waterShader = Content.Load<Effect>(ContentFolderEffects + "Water");
-            _waterTexture = Content.Load<Texture2D>(ContentFolderTextures + "sky_blue");
             _waveTexture = Content.Load<Texture2D>(ContentFolderTextures + "wave0_normal");
             
             base.LoadContent();
