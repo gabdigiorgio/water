@@ -10,10 +10,10 @@
 float Time;
 float ScaleTimeFactor;
 
+float4x4 ReflectionView;
+float4x4 Projection;
 float4x4 WorldViewProjection;
 float4x4 World;
-
-float3 WaterColor;
 
 float3 AmbientColor;
 float3 DiffuseColor;
@@ -27,6 +27,17 @@ float Shininess;
 float3 LightPosition;
 float3 EyePosition;
 float2 Tiling;
+
+texture ReflectionTexture;
+sampler2D reflectionSampler = sampler_state
+{
+    Texture = (ReflectionTexture);
+    ADDRESSU = Clamp;
+    ADDRESSV = Clamp;
+    MINFILTER = Linear;
+    MAGFILTER = Linear;
+    MIPFILTER = Linear;
+};
 
 texture NormalTexture;
 sampler2D normalSampler = sampler_state
@@ -69,6 +80,7 @@ struct VertexShaderOutput
     float2 TextureCoordinates : TEXCOORD0;
     float4 WorldPosition : TEXCOORD1;
     float4 Normal : TEXCOORD2;
+    float4 ReflectionPosition : TEXCOORD3;
 };
 
 VertexShaderOutput MainVS(in VertexShaderInput input)
@@ -79,17 +91,21 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     output.WorldPosition = mul(input.Position, World);
     output.Normal = input.Normal;
     output.TextureCoordinates = input.TextureCoordinates * Tiling;
+    
+    // Reflection
+    float4x4 reflectProjectWorld;
+    
+    reflectProjectWorld = mul(ReflectionView, Projection);
+    reflectProjectWorld = mul(World, reflectProjectWorld);
+    
+    output.ReflectionPosition = mul(input.Position, reflectProjectWorld);
 	
     return output;
 }
 
 float4 MainPS(VertexShaderOutput input) : COLOR
-{
-    // Base vectors
-    float3 lightDirection = normalize(LightPosition - input.WorldPosition.xyz);
-    float3 viewDirection = normalize(EyePosition - input.WorldPosition.xyz);
-    float3 halfVector = normalize(lightDirection + viewDirection);
-    
+{ 
+    // Scroll waves
     float2 displacedTextureCoordinates1 = input.TextureCoordinates + float2(Time / ScaleTimeFactor, 0.0);
     displacedTextureCoordinates1 = frac(displacedTextureCoordinates1);
     float3 normal1 = getNormalFromMap(displacedTextureCoordinates1, input.WorldPosition.xyz, normalize(input.Normal.xyz));
@@ -100,7 +116,14 @@ float4 MainPS(VertexShaderOutput input) : COLOR
 
     float3 normal = normalize(normal1 + normal2);
     
-     // Ambient
+    // LIGHT
+    
+    // Base vectors
+    float3 lightDirection = normalize(LightPosition - input.WorldPosition.xyz);
+    float3 viewDirection = normalize(EyePosition - input.WorldPosition.xyz);
+    float3 halfVector = normalize(lightDirection + viewDirection);
+    
+    // Ambient
     float3 ambientLight = KAmbient * AmbientColor;
     
     // Diffuse
@@ -111,8 +134,26 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     float NdotH = saturate(dot(normal, halfVector));
     float3 specularLight = NdotL * KSpecular * SpecularColor * pow(NdotH, Shininess);
     
+    // REFLECTION
+   
+    float4 reflectionTexCoord;
+    reflectionTexCoord = input.ReflectionPosition;
+    
+    // screen position
+    reflectionTexCoord.xyz /= reflectionTexCoord.w;
+    
+    // adjust offset
+    reflectionTexCoord.x = 0.5f * reflectionTexCoord.x + 0.5f;
+    reflectionTexCoord.y = -0.5f * reflectionTexCoord.y + 0.5f;
+    
+	// reflect more based on distance from the camera
+    reflectionTexCoord.z = 0.001f / reflectionTexCoord.z;
+    float2 reflectionTex = reflectionTexCoord.xy + reflectionTexCoord.z;
+    
+    float4 reflectionColor = tex2D(reflectionSampler, reflectionTex);
+    
     // Final calculation
-    float4 finalColor = float4(saturate(ambientLight + diffuseLight) * WaterColor + specularLight, 1.0);
+    float4 finalColor = float4(saturate(ambientLight + diffuseLight) * reflectionColor.rgb + specularLight, reflectionColor.a);
     return finalColor;
 
 }

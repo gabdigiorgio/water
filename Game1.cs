@@ -38,6 +38,9 @@ namespace Water
         private Matrix _quadWorld;
         private Effect _waterShader;
         private Texture2D _waveTexture;
+        
+        // Reflection
+        private RenderTarget2D _reflectionRenderTarget;
 
         public Game1()
         {
@@ -66,6 +69,10 @@ namespace Water
             // Quad
             _quad = new QuadPrimitive(GraphicsDevice);
             _quadWorld = Matrix.CreateScale(300f, 0f, 300f) * Matrix.CreateTranslation(0f, 0f, 0f);
+            
+            _reflectionRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width, 
+                GraphicsDevice.Viewport.Height, 
+                true, SurfaceFormat.Color, DepthFormat.Depth24);
             
             base.Initialize();
         }
@@ -102,25 +109,81 @@ namespace Water
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
 
+            DrawReflection(_quadWorld, _freeCamera.View, _freeCamera.Projection, gameTime);
+            
             DrawSkyBox(_freeCamera.View, _freeCamera.Projection, _freeCamera.Position);
             
             DrawTeapot(_teapotWorld, _freeCamera.View, _freeCamera.Projection, _freeCamera.Position);
-            
-            DrawWater(_quadWorld, _freeCamera.View, _freeCamera.Projection, _freeCamera.Position, gameTime);
 
             base.Draw(gameTime);
         }
         
-        private void DrawSkyBox(Matrix view, Matrix projection, Vector3 position)
+        private void DrawReflection(Matrix world, Matrix view, Matrix projection, GameTime gameTime)
         {
-            var originalRasterizerState = GraphicsDevice.RasterizerState;
-            var rasterizerState = new RasterizerState();
-            rasterizerState.CullMode = CullMode.None;
-            GraphicsDevice.RasterizerState = rasterizerState;
-            _skyBox.Draw(view, projection, position);
-            GraphicsDevice.RasterizerState = originalRasterizerState;
+            GraphicsDevice.SetRenderTarget(_reflectionRenderTarget);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.CornflowerBlue, 1f, 0);
+            
+            var quadNormal = Vector3.Up;
+            
+            var projLength = Vector3.Dot(quadNormal, _freeCamera.Position - _quadWorld.Translation);
+
+            var reflectionCamPos = _freeCamera.Position - 2 * quadNormal * projLength;
+
+            var reflectionCamForward = Vector3.Reflect(_freeCamera.FrontDirection, quadNormal);
+
+            var reflectionCamUp = Vector3.Reflect(_freeCamera.UpDirection, quadNormal);
+            
+            var reflectionCamView = Matrix.CreateLookAt(reflectionCamPos, 
+                reflectionCamPos + reflectionCamForward, reflectionCamUp);
+            
+            // Draw the scene
+            DrawScene(_teapotWorld, reflectionCamView, projection, reflectionCamPos);
+            
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+            GraphicsDevice.SetRenderTarget(null);
+            
+            // Draw the water
+            DrawWater(world, view, projection, reflectionCamView, gameTime);
+        }
+
+        private void DrawScene(Matrix world, Matrix view, Matrix projection, Vector3 position)
+        {
+            DrawSkyBox(view, projection, position);
+            
+            DrawTeapot(world, view, projection, position);
+        }
+        
+                
+        private void DrawWater(Matrix world, Matrix view, Matrix projection, Matrix reflectionView, GameTime gameTime)
+        {
+            _waterShader.CurrentTechnique = _waterShader.Techniques["Water"];
+
+            _waterShader.Parameters["World"].SetValue(world);
+            _waterShader.Parameters["WorldViewProjection"].SetValue(world * view * projection);
+            _waterShader.Parameters["ReflectionView"].SetValue(reflectionView);
+            _waterShader.Parameters["Projection"].SetValue(projection);
+            
+            _waterShader.Parameters["ReflectionTexture"]?.SetValue(_reflectionRenderTarget);
+            _waterShader.Parameters["NormalTexture"].SetValue(_waveTexture);
+            _waterShader.Parameters["Tiling"].SetValue(Vector2.One);
+            
+            _waterShader.Parameters["AmbientColor"].SetValue(new Vector3(1f, 1f, 1f));
+            _waterShader.Parameters["DiffuseColor"].SetValue(new Vector3(1f, 1f, 1f));
+            _waterShader.Parameters["SpecularColor"].SetValue(new Vector3(1f, 1f, 1f));
+            
+            _waterShader.Parameters["KAmbient"].SetValue(0.8f);
+            _waterShader.Parameters["KDiffuse"].SetValue(0.8f);
+            _waterShader.Parameters["KSpecular"].SetValue(0.5f);
+            _waterShader.Parameters["Shininess"].SetValue(32f);
+            
+            _waterShader.Parameters["LightPosition"].SetValue(_lightPosition);
+            _waterShader.Parameters["EyePosition"].SetValue(_freeCamera.Position);
+            
+            _waterShader.Parameters["Time"].SetValue((float)gameTime.TotalGameTime.TotalSeconds);
+            _waterShader.Parameters["ScaleTimeFactor"].SetValue(5f);
+            
+            _quad.Draw(_waterShader);
         }
         
         private void DrawTeapot(Matrix world, Matrix view, Matrix projection, Vector3 position)
@@ -156,33 +219,14 @@ namespace Water
             GraphicsDevice.RasterizerState = previousRasterizerState;
         }
         
-        private void DrawWater(Matrix world, Matrix view, Matrix projection, Vector3 position, GameTime gameTime)
+        private void DrawSkyBox(Matrix view, Matrix projection, Vector3 position)
         {
-            _waterShader.CurrentTechnique = _waterShader.Techniques["Water"];
-
-            _waterShader.Parameters["World"].SetValue(world);
-            _waterShader.Parameters["WorldViewProjection"].SetValue(world * view * projection);
-            
-            _waterShader.Parameters["WaterColor"].SetValue(new Vector3(0.2f, 0.6f, 1f));
-            _waterShader.Parameters["NormalTexture"].SetValue(_waveTexture);
-            _waterShader.Parameters["Tiling"].SetValue(Vector2.One);
-            
-            _waterShader.Parameters["AmbientColor"].SetValue(new Vector3(1f, 1f, 1f));
-            _waterShader.Parameters["DiffuseColor"].SetValue(new Vector3(1f, 1f, 1f));
-            _waterShader.Parameters["SpecularColor"].SetValue(new Vector3(1f, 1f, 1f));
-            
-            _waterShader.Parameters["KAmbient"].SetValue(0.5f);
-            _waterShader.Parameters["KDiffuse"].SetValue(0.430f);
-            _waterShader.Parameters["KSpecular"].SetValue(0.880f);
-            _waterShader.Parameters["Shininess"].SetValue(32.820f);
-            
-            _waterShader.Parameters["LightPosition"].SetValue(_lightPosition);
-            _waterShader.Parameters["EyePosition"].SetValue(position);
-            
-            _waterShader.Parameters["Time"].SetValue((float)gameTime.TotalGameTime.TotalSeconds);
-            _waterShader.Parameters["ScaleTimeFactor"].SetValue(5f);
-            
-            _quad.Draw(_waterShader);
+            var originalRasterizerState = GraphicsDevice.RasterizerState;
+            var rasterizerState = new RasterizerState();
+            rasterizerState.CullMode = CullMode.None;
+            GraphicsDevice.RasterizerState = rasterizerState;
+            _skyBox.Draw(view, projection, position);
+            GraphicsDevice.RasterizerState = originalRasterizerState;
         }
     }
 }
