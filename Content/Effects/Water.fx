@@ -66,7 +66,6 @@ struct VertexShaderOutput
     float4 Normal : TEXCOORD2;
     float4 ReflectionPosition : TEXCOORD3;
     float4 RefractionPosition : TEXCOORD4;
-    float3 ToCameraVector : TEXCOORD5;
 };
 
 VertexShaderOutput MainVS(in VertexShaderInput input)
@@ -88,8 +87,6 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     
     // Refraction
     output.RefractionPosition = output.Position;
-    
-    output.ToCameraVector = CameraPosition - output.WorldPosition.xyz;
 	
     return output;
 }
@@ -140,7 +137,7 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     float4 refractionColor = tex2D(refractionSampler, refractionTex);
     
     // Fresnel
-    float3 viewVector = normalize(input.ToCameraVector);
+    float3 viewVector = normalize(CameraPosition - input.WorldPosition.xyz);
     float refractiveFactor = dot(viewVector, normalize(input.Normal.xyz));
     
     // Final calculation
