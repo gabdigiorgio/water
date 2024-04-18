@@ -37,7 +37,7 @@ namespace Water
         private QuadPrimitive _quad;
         private Matrix _quadWorld;
         private Effect _waterShader;
-        private Texture2D _waveTexture;
+        private Texture2D _distortionMap;
         
         // Reflection
         private RenderTarget2D _reflectionRenderTarget;
@@ -93,6 +93,7 @@ namespace Water
             _blinnPhongShader = Content.Load<Effect>(ContentFolderEffects + "BlinnPhong");
             
             _waterShader = Content.Load<Effect>(ContentFolderEffects + "Water");
+            _distortionMap = Content.Load<Texture2D>(ContentFolderTextures + "distortion_map");
             
             base.LoadContent();
         }
@@ -188,6 +189,10 @@ namespace Water
             
             _waterShader.Parameters["ReflectionTexture"].SetValue(_reflectionRenderTarget);
             _waterShader.Parameters["RefractionTexture"].SetValue(_refractionRenderTarget);
+            _waterShader.Parameters["DistortionMap"].SetValue(_distortionMap);
+            _waterShader.Parameters["Tiling"].SetValue(Vector2.One * 2f);
+            
+            _waterShader.Parameters["WaveStrength"].SetValue(0.01f);
             
             _quad.Draw(_waterShader);
             

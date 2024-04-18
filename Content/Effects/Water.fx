@@ -7,6 +7,9 @@
 #define PS_SHADERMODEL ps_4_0_level_9_3
 #endif
 
+float2 Tiling;
+float WaveStrength;
+
 float4x4 ReflectionView;
 float4x4 Projection;
 float4x4 WorldViewProjection;
@@ -34,10 +37,10 @@ sampler2D reflectionSampler = sampler_state
     MIPFILTER = Linear;
 };
 
-texture NormalTexture;
-sampler2D normalSampler = sampler_state
+texture DistortionMap;
+sampler2D distortionSampler = sampler_state
 {
-    Texture = (NormalTexture);
+    Texture = (DistortionMap);
     ADDRESSU = WRAP;
     ADDRESSV = WRAP;
     MINFILTER = LINEAR;
@@ -69,7 +72,8 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     output.Position = mul(input.Position, WorldViewProjection);
     output.WorldPosition = mul(input.Position, World);
     output.Normal = input.Normal;
-    output.TextureCoordinates = input.TextureCoordinates;
+    //output.TextureCoordinates = float2(input.Position.x / 2.0 + 0.5, input.Position.y / 2.0 + 0.5) * Tiling;
+    output.TextureCoordinates = input.TextureCoordinates * Tiling;
     
     // Reflection
     float4x4 reflectProjectWorld;
@@ -119,6 +123,12 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     float2 reflectionTex = reflectionTexCoord.xy + reflectionTexCoord.z;
     
     // REFLECTION AND REFRACTION COLORS
+    
+    float2 distortion = (tex2D(distortionSampler, input.TextureCoordinates)) * WaveStrength;
+    
+    reflectionTex += distortion;
+    refractionTex += distortion;
+    
     float4 reflectionColor = tex2D(reflectionSampler, reflectionTex);
     float4 refractionColor = tex2D(refractionSampler, refractionTex);
     

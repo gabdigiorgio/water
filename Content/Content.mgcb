@@ -88,7 +88,7 @@
 /processorParam:TextureFormat=Compressed
 /build:Models/skybox/cube.fbx
 
-#begin Textures/dudv_map.jpg
+#begin Textures/distortion_map.jpg
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -98,7 +98,7 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:Textures/dudv_map.jpg
+/build:Textures/distortion_map.jpg
 
 #begin Textures/skyboxes/mountain_skybox.dds
 /importer:TextureImporter
