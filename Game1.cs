@@ -38,6 +38,7 @@ namespace Water
         private Matrix _quadWorld;
         private Effect _waterShader;
         private Texture2D _distortionMap;
+        private const float WaveSpeed = 0.05f;
         
         // Reflection
         private RenderTarget2D _reflectionRenderTarget;
@@ -192,7 +193,8 @@ namespace Water
             _waterShader.Parameters["DistortionMap"].SetValue(_distortionMap);
             _waterShader.Parameters["Tiling"].SetValue(Vector2.One * 2f);
             
-            _waterShader.Parameters["WaveStrength"].SetValue(0.01f);
+            _waterShader.Parameters["MoveFactor"].SetValue(WaveSpeed * (float)gameTime.TotalGameTime.TotalSeconds);
+            _waterShader.Parameters["WaveStrength"].SetValue(0.005f);
             
             _quad.Draw(_waterShader);
             

@@ -7,6 +7,7 @@
 #define PS_SHADERMODEL ps_4_0_level_9_3
 #endif
 
+float MoveFactor;
 float2 Tiling;
 float WaveStrength;
 
@@ -72,7 +73,6 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     output.Position = mul(input.Position, WorldViewProjection);
     output.WorldPosition = mul(input.Position, World);
     output.Normal = input.Normal;
-    //output.TextureCoordinates = float2(input.Position.x / 2.0 + 0.5, input.Position.y / 2.0 + 0.5) * Tiling;
     output.TextureCoordinates = input.TextureCoordinates * Tiling;
     
     // Reflection
@@ -124,10 +124,12 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     
     // REFLECTION AND REFRACTION COLORS
     
-    float2 distortion = (tex2D(distortionSampler, input.TextureCoordinates)) * WaveStrength;
+    float2 distortion1 = tex2D(distortionSampler, float2(input.TextureCoordinates.x + MoveFactor, input.TextureCoordinates.y)) * WaveStrength;
+    float2 distortion2 = tex2D(distortionSampler, float2(- input.TextureCoordinates.x + MoveFactor, input.TextureCoordinates.y + MoveFactor)) * WaveStrength;
+    float2 totalDistortion = distortion1 + distortion2;
     
-    reflectionTex += distortion;
-    refractionTex += distortion;
+    reflectionTex += totalDistortion;
+    refractionTex += totalDistortion;
     
     float4 reflectionColor = tex2D(reflectionSampler, reflectionTex);
     float4 refractionColor = tex2D(refractionSampler, refractionTex);
