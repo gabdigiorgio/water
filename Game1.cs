@@ -41,6 +41,9 @@ namespace Water
         
         // Reflection
         private RenderTarget2D _reflectionRenderTarget;
+        
+        // Refraction
+        private RenderTarget2D _refractionRenderTarget;
 
         public Game1()
         {
@@ -58,8 +61,7 @@ namespace Water
             _graphicsDeviceManager.ApplyChanges();
             
             // Camera
-            var screenSize = new Point(GraphicsDevice.Viewport.Width / 2, GraphicsDevice.Viewport.Height / 2);
-            _freeCamera = new FreeCamera(GraphicsDevice.Viewport.AspectRatio, _cameraInitialPosition, screenSize);
+            _freeCamera = new FreeCamera(GraphicsDevice.Viewport.AspectRatio, _cameraInitialPosition);
             
             // Teapot
             _teapot = new TeapotPrimitive(GraphicsDevice, 100f, 16);
@@ -71,6 +73,10 @@ namespace Water
             _quadWorld = Matrix.CreateScale(300f, 0f, 300f) * Matrix.CreateTranslation(0f, 0f, 0f);
             
             _reflectionRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width, 
+                GraphicsDevice.Viewport.Height, 
+                true, SurfaceFormat.Color, DepthFormat.Depth24);
+            
+            _refractionRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width, 
                 GraphicsDevice.Viewport.Height, 
                 true, SurfaceFormat.Color, DepthFormat.Depth24);
             
@@ -87,7 +93,6 @@ namespace Water
             _blinnPhongShader = Content.Load<Effect>(ContentFolderEffects + "BlinnPhong");
             
             _waterShader = Content.Load<Effect>(ContentFolderEffects + "Water");
-            _waveTexture = Content.Load<Texture2D>(ContentFolderTextures + "wave1_normal");
             
             base.LoadContent();
         }
@@ -110,6 +115,8 @@ namespace Water
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
+            DrawRefraction();
+            
             DrawReflection(_quadWorld, _freeCamera.View, _freeCamera.Projection, gameTime);
             
             DrawSkyBox(_freeCamera.View, _freeCamera.Projection, _freeCamera.Position);
@@ -117,6 +124,18 @@ namespace Water
             DrawTeapot(_teapotWorld, _freeCamera.View, _freeCamera.Projection, _freeCamera.Position);
 
             base.Draw(gameTime);
+        }
+        
+        private void DrawRefraction()
+        {
+            GraphicsDevice.SetRenderTarget(_refractionRenderTarget);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.CornflowerBlue, 1f, 0);
+            
+            // Draw the scene
+            DrawScene(_teapotWorld, _freeCamera.View, _freeCamera.Projection, _freeCamera.Position);
+            
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+            GraphicsDevice.SetRenderTarget(null);
         }
         
         private void DrawReflection(Matrix world, Matrix view, Matrix projection, GameTime gameTime)
@@ -167,24 +186,8 @@ namespace Water
             _waterShader.Parameters["ReflectionView"].SetValue(reflectionView);
             _waterShader.Parameters["Projection"].SetValue(projection);
             
-            _waterShader.Parameters["ReflectionTexture"]?.SetValue(_reflectionRenderTarget);
-            _waterShader.Parameters["NormalTexture"].SetValue(_waveTexture);
-            _waterShader.Parameters["Tiling"].SetValue(Vector2.One);
-            
-            _waterShader.Parameters["AmbientColor"].SetValue(new Vector3(1f, 1f, 1f));
-            _waterShader.Parameters["DiffuseColor"].SetValue(new Vector3(1f, 1f, 1f));
-            _waterShader.Parameters["SpecularColor"].SetValue(new Vector3(1f, 1f, 1f));
-            
-            _waterShader.Parameters["KAmbient"].SetValue(0.8f);
-            _waterShader.Parameters["KDiffuse"].SetValue(0.8f);
-            _waterShader.Parameters["KSpecular"].SetValue(0.5f);
-            _waterShader.Parameters["Shininess"].SetValue(32f);
-            
-            _waterShader.Parameters["LightPosition"].SetValue(_lightPosition);
-            _waterShader.Parameters["EyePosition"].SetValue(_freeCamera.Position);
-            
-            _waterShader.Parameters["Time"].SetValue((float)gameTime.TotalGameTime.TotalSeconds);
-            _waterShader.Parameters["ScaleTimeFactor"].SetValue(15f);
+            _waterShader.Parameters["ReflectionTexture"].SetValue(_reflectionRenderTarget);
+            _waterShader.Parameters["RefractionTexture"].SetValue(_refractionRenderTarget);
             
             _quad.Draw(_waterShader);
             

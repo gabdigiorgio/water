@@ -7,26 +7,21 @@
 #define PS_SHADERMODEL ps_4_0_level_9_3
 #endif
 
-float Time;
-float ScaleTimeFactor;
-
 float4x4 ReflectionView;
 float4x4 Projection;
 float4x4 WorldViewProjection;
 float4x4 World;
 
-float3 AmbientColor;
-float3 DiffuseColor;
-float3 SpecularColor;
-
-float KAmbient;
-float KDiffuse;
-float KSpecular;
-float Shininess;
-
-float3 LightPosition;
-float3 EyePosition;
-float2 Tiling;
+texture RefractionTexture;
+sampler2D refractionSampler = sampler_state
+{
+    Texture = (RefractionTexture);
+    ADDRESSU = Clamp;
+    ADDRESSV = Clamp;
+    MINFILTER = Linear;
+    MAGFILTER = Linear;
+    MIPFILTER = Linear;
+};
 
 texture ReflectionTexture;
 sampler2D reflectionSampler = sampler_state
@@ -50,23 +45,6 @@ sampler2D normalSampler = sampler_state
     MIPFILTER = LINEAR;
 };
 
-float3 getNormalFromMap(float2 textureCoordinates, float3 worldPosition, float3 worldNormal)
-{
-    float3 tangentNormal = tex2D(normalSampler, textureCoordinates).xyz * 2.0 - 1.0;
-
-    float3 Q1 = ddx(worldPosition);
-    float3 Q2 = ddy(worldPosition);
-    float2 st1 = ddx(textureCoordinates);
-    float2 st2 = ddy(textureCoordinates);
-
-    worldNormal = normalize(worldNormal.xyz);
-    float3 T = normalize(Q1 * st2.y - Q2 * st1.y);
-    float3 B = -normalize(cross(worldNormal, T));
-    float3x3 TBN = float3x3(T, B, worldNormal);
-
-    return normalize(mul(tangentNormal, TBN));
-}
-
 struct VertexShaderInput
 {
     float4 Position : POSITION0;
@@ -81,6 +59,7 @@ struct VertexShaderOutput
     float4 WorldPosition : TEXCOORD1;
     float4 Normal : TEXCOORD2;
     float4 ReflectionPosition : TEXCOORD3;
+    float4 RefractionPosition : TEXCOORD4;
 };
 
 VertexShaderOutput MainVS(in VertexShaderInput input)
@@ -90,7 +69,7 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     output.Position = mul(input.Position, WorldViewProjection);
     output.WorldPosition = mul(input.Position, World);
     output.Normal = input.Normal;
-    output.TextureCoordinates = input.TextureCoordinates * Tiling;
+    output.TextureCoordinates = input.TextureCoordinates;
     
     // Reflection
     float4x4 reflectProjectWorld;
@@ -99,40 +78,29 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     reflectProjectWorld = mul(World, reflectProjectWorld);
     
     output.ReflectionPosition = mul(input.Position, reflectProjectWorld);
+    
+    // Refraction
+    output.RefractionPosition = output.Position;
 	
     return output;
 }
 
 float4 MainPS(VertexShaderOutput input) : COLOR
-{ 
-    // Scroll waves
-    float2 displacedTextureCoordinates1 = input.TextureCoordinates + float2(Time / ScaleTimeFactor, 0.0);
-    displacedTextureCoordinates1 = frac(displacedTextureCoordinates1);
-    float3 normal1 = getNormalFromMap(displacedTextureCoordinates1, input.WorldPosition.xyz, normalize(input.Normal.xyz));
-
-    float2 displacedTextureCoordinates2 = input.TextureCoordinates + float2(0.0, Time / ScaleTimeFactor);
-    displacedTextureCoordinates2 = frac(displacedTextureCoordinates2);
-    float3 normal2 = getNormalFromMap(displacedTextureCoordinates2, input.WorldPosition.xyz, normalize(input.Normal.xyz));
-
-    float3 normal = normalize(normal1 + normal2);
+{     
+    // REFRACTION
+    float4 refractionTexCoord;
+    refractionTexCoord = input.RefractionPosition;
     
-    // LIGHT
+    // screen position
+    refractionTexCoord.xyz /= refractionTexCoord.w;
     
-    // Base vectors
-    float3 lightDirection = normalize(LightPosition - input.WorldPosition.xyz);
-    float3 viewDirection = normalize(EyePosition - input.WorldPosition.xyz);
-    float3 halfVector = normalize(lightDirection + viewDirection);
+    // adjust offset
+    refractionTexCoord.x = 0.5f * refractionTexCoord.x + 0.5f;
+    refractionTexCoord.y = -0.5f * refractionTexCoord.y + 0.5f;
     
-    // Ambient
-    float3 ambientLight = KAmbient * AmbientColor;
-    
-    // Diffuse
-    float NdotL = saturate(dot(normal, lightDirection));
-    float3 diffuseLight = KDiffuse * DiffuseColor * NdotL;
-    
-    // Specular
-    float NdotH = saturate(dot(normal, halfVector));
-    float3 specularLight = NdotL * KSpecular * SpecularColor * pow(NdotH, Shininess);
+	// refract more based on distance from the camera
+    refractionTexCoord.z = 0.001f / refractionTexCoord.z;
+    float2 refractionTex = refractionTexCoord.xy - refractionTexCoord.z;
     
     // REFLECTION
    
@@ -150,10 +118,12 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     reflectionTexCoord.z = 0.001f / reflectionTexCoord.z;
     float2 reflectionTex = reflectionTexCoord.xy + reflectionTexCoord.z;
     
+    // REFLECTION AND REFRACTION COLORS
     float4 reflectionColor = tex2D(reflectionSampler, reflectionTex);
+    float4 refractionColor = tex2D(refractionSampler, refractionTex);
     
     // Final calculation
-    float4 finalColor = float4(saturate(ambientLight + diffuseLight) * reflectionColor.rgb + specularLight, reflectionColor.a);
+    float4 finalColor = lerp(reflectionColor, refractionColor, 0.5);
     return finalColor;
 
 }
