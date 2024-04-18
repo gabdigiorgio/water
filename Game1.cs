@@ -38,6 +38,7 @@ namespace Water
         private Matrix _quadWorld;
         private Effect _waterShader;
         private Texture2D _distortionMap;
+        private Texture2D _normalMap;
         private const float WaveSpeed = 0.05f;
         
         // Reflection
@@ -71,7 +72,7 @@ namespace Water
             
             // Quad
             _quad = new QuadPrimitive(GraphicsDevice);
-            _quadWorld = Matrix.CreateScale(300f, 0f, 300f) * Matrix.CreateTranslation(0f, 0f, 0f);
+            _quadWorld = Matrix.CreateScale(300f, 0f, 300f) * Matrix.CreateTranslation(Vector3.Zero);
             
             _reflectionRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width, 
                 GraphicsDevice.Viewport.Height, 
@@ -87,7 +88,7 @@ namespace Water
         protected override void LoadContent()
         {
             var skyBox = Content.Load<Model>(ContentFolder3D + "skybox/cube");
-            var skyBoxTexture = Content.Load<TextureCube>(ContentFolderTextures + "/skyboxes/mountain_skybox");
+            var skyBoxTexture = Content.Load<TextureCube>(ContentFolderTextures + "/skyboxes/stormday_skybox");
             var skyBoxEffect = Content.Load<Effect>(ContentFolderEffects + "SkyBox");
             _skyBox = new SkyBox(skyBox, skyBoxTexture, skyBoxEffect, SkyBoxSize);
             
@@ -95,6 +96,7 @@ namespace Water
             
             _waterShader = Content.Load<Effect>(ContentFolderEffects + "Water");
             _distortionMap = Content.Load<Texture2D>(ContentFolderTextures + "distortion_map");
+            _normalMap = Content.Load<Texture2D>(ContentFolderTextures + "wave1_normal");
             
             base.LoadContent();
         }
@@ -188,15 +190,20 @@ namespace Water
             _waterShader.Parameters["ReflectionView"].SetValue(reflectionView);
             _waterShader.Parameters["Projection"].SetValue(projection);
             
-            _waterShader.Parameters["ReflectionTexture"].SetValue(_reflectionRenderTarget);
-            _waterShader.Parameters["RefractionTexture"].SetValue(_refractionRenderTarget);
+            _waterShader.Parameters["ReflectionTexture"]?.SetValue(_reflectionRenderTarget);
+            _waterShader.Parameters["RefractionTexture"]?.SetValue(_refractionRenderTarget);
             _waterShader.Parameters["DistortionMap"].SetValue(_distortionMap);
+            _waterShader.Parameters["NormalMap"]?.SetValue(_normalMap);
             _waterShader.Parameters["Tiling"].SetValue(Vector2.One * 2f);
             
             _waterShader.Parameters["MoveFactor"].SetValue(WaveSpeed * (float)gameTime.TotalGameTime.TotalSeconds);
-            _waterShader.Parameters["WaveStrength"].SetValue(0.005f);
+            _waterShader.Parameters["WaveStrength"].SetValue(0.01f);
             
             _waterShader.Parameters["CameraPosition"].SetValue(_freeCamera.Position);
+            _waterShader.Parameters["LightPosition"].SetValue(_lightPosition);
+            _waterShader.Parameters["LightColor"].SetValue(Color.White.ToVector3());
+            _waterShader.Parameters["ShineDamper"].SetValue(5f);
+            _waterShader.Parameters["Reflectivity"].SetValue(0.6f);
             
             _quad.Draw(_waterShader);
             

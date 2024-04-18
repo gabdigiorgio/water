@@ -7,6 +7,10 @@
 #define PS_SHADERMODEL ps_4_0_level_9_3
 #endif
 
+float ShineDamper; // 20.0
+float Reflectivity; // 0.6
+float3 LightPosition;
+float3 LightColor;
 float3 CameraPosition;
 
 float MoveFactor;
@@ -44,6 +48,17 @@ texture DistortionMap;
 sampler2D distortionSampler = sampler_state
 {
     Texture = (DistortionMap);
+    ADDRESSU = WRAP;
+    ADDRESSV = WRAP;
+    MINFILTER = LINEAR;
+    MAGFILTER = LINEAR;
+    MIPFILTER = LINEAR;
+};
+
+texture NormalMap;
+sampler2D normalMapSampler = sampler_state
+{
+    Texture = (NormalMap);
     ADDRESSU = WRAP;
     ADDRESSV = WRAP;
     MINFILTER = LINEAR;
@@ -126,9 +141,9 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     
     // REFLECTION AND REFRACTION COLORS
     
-    float2 distortion1 = tex2D(distortionSampler, float2(input.TextureCoordinates.x + MoveFactor, input.TextureCoordinates.y)) * WaveStrength;
-    float2 distortion2 = tex2D(distortionSampler, float2(- input.TextureCoordinates.x + MoveFactor, input.TextureCoordinates.y + MoveFactor)) * WaveStrength;
-    float2 totalDistortion = distortion1 + distortion2;
+    float2 distortedTexCoords = tex2D(distortionSampler, float2(input.TextureCoordinates.x + MoveFactor, input.TextureCoordinates.y)) * 0.01;
+    distortedTexCoords = input.TextureCoordinates + float2(distortedTexCoords.x, distortedTexCoords.y + MoveFactor);
+    float2 totalDistortion = tex2D(distortionSampler, distortedTexCoords) * WaveStrength;
     
     reflectionTex += totalDistortion;
     refractionTex += totalDistortion;
@@ -140,10 +155,21 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     float3 viewVector = normalize(CameraPosition - input.WorldPosition.xyz);
     float refractiveFactor = dot(viewVector, normalize(input.Normal.xyz));
     
+    // Light 
+    float4 normalMapColor = tex2D(normalMapSampler, distortedTexCoords);
+    float3 normal = float3(normalMapColor.r * 2.0 - 1.0, normalMapColor.b, normalMapColor.g * 2.0 - 1.0);
+    normal = normalize(normal);
+    
+    float lightDirection = normalize(input.WorldPosition.xyz - LightPosition);
+    
+    float3 reflectedLight = reflect(lightDirection, normal);
+    float specular = saturate(dot(reflectedLight, viewVector));
+    specular = pow(specular, ShineDamper);
+    float3 specularHighlights = LightColor * specular * Reflectivity;
+    
     // Final calculation
-    float4 finalColor = lerp(reflectionColor, refractionColor, refractiveFactor);
+    float4 finalColor = lerp(reflectionColor, refractionColor, refractiveFactor) + float4(specularHighlights, 0.0);
     return finalColor;
-
 }
 
 technique Water
