@@ -196,6 +196,8 @@ namespace Water
             _waterShader.Parameters["MoveFactor"].SetValue(WaveSpeed * (float)gameTime.TotalGameTime.TotalSeconds);
             _waterShader.Parameters["WaveStrength"].SetValue(0.005f);
             
+            _waterShader.Parameters["CameraPosition"].SetValue(_freeCamera.Position);
+            
             _quad.Draw(_waterShader);
             
             GraphicsDevice.RasterizerState = previousRasterizerState;

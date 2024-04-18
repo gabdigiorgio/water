@@ -7,6 +7,8 @@
 #define PS_SHADERMODEL ps_4_0_level_9_3
 #endif
 
+float3 CameraPosition;
+
 float MoveFactor;
 float2 Tiling;
 float WaveStrength;
@@ -64,6 +66,7 @@ struct VertexShaderOutput
     float4 Normal : TEXCOORD2;
     float4 ReflectionPosition : TEXCOORD3;
     float4 RefractionPosition : TEXCOORD4;
+    float3 ToCameraVector : TEXCOORD5;
 };
 
 VertexShaderOutput MainVS(in VertexShaderInput input)
@@ -85,6 +88,8 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     
     // Refraction
     output.RefractionPosition = output.Position;
+    
+    output.ToCameraVector = CameraPosition - output.WorldPosition.xyz;
 	
     return output;
 }
@@ -134,8 +139,12 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     float4 reflectionColor = tex2D(reflectionSampler, reflectionTex);
     float4 refractionColor = tex2D(refractionSampler, refractionTex);
     
+    // Fresnel
+    float3 viewVector = normalize(input.ToCameraVector);
+    float refractiveFactor = dot(viewVector, normalize(input.Normal.xyz));
+    
     // Final calculation
-    float4 finalColor = lerp(reflectionColor, refractionColor, 0.5);
+    float4 finalColor = lerp(reflectionColor, refractionColor, refractiveFactor);
     return finalColor;
 
 }
