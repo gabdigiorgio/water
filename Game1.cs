@@ -21,7 +21,7 @@ namespace Water
         // Camera
         private FreeCamera _freeCamera;
         private readonly Vector3 _cameraInitialPosition = new(0f, 50f, 300f);
-        private readonly Vector3 _lightPosition = new(500f, 500f, 300f);
+        private readonly Vector3 _lightPosition = new(1000f, 500f, 300f);
         
         // Skybox
         private SkyBox _skyBox;
@@ -210,9 +210,6 @@ namespace Water
                 
         private void DrawWater(Matrix world, Matrix view, Matrix projection, Matrix reflectionView, GameTime gameTime)
         {
-            var previousRasterizerState = GraphicsDevice.RasterizerState;
-            GraphicsDevice.RasterizerState = RasterizerState.CullNone;
-            
             _waterShader.CurrentTechnique = _waterShader.Techniques["Water"];
 
             _waterShader.Parameters["World"].SetValue(world);
@@ -220,10 +217,10 @@ namespace Water
             _waterShader.Parameters["ReflectionView"].SetValue(reflectionView);
             _waterShader.Parameters["Projection"].SetValue(projection);
             
-            _waterShader.Parameters["ReflectionTexture"]?.SetValue(_reflectionRenderTarget);
-            _waterShader.Parameters["RefractionTexture"]?.SetValue(_refractionRenderTarget);
+            _waterShader.Parameters["ReflectionTexture"].SetValue(_reflectionRenderTarget);
+            _waterShader.Parameters["RefractionTexture"].SetValue(_refractionRenderTarget);
             _waterShader.Parameters["DistortionMap"].SetValue(_distortionMap);
-            _waterShader.Parameters["NormalMap"]?.SetValue(_normalMap);
+            _waterShader.Parameters["NormalMap"].SetValue(_normalMap);
             _waterShader.Parameters["Tiling"].SetValue(Vector2.One * 20f);
             
             _waterShader.Parameters["MoveFactor"].SetValue(WaveSpeed * (float)gameTime.TotalGameTime.TotalSeconds);
@@ -236,8 +233,6 @@ namespace Water
             _waterShader.Parameters["KSpecular"].SetValue(0.3f);
             
             _quad.Draw(_waterShader);
-            
-            GraphicsDevice.RasterizerState = previousRasterizerState;
         }
         
         private void DrawTeapot(Matrix world, Matrix view, Matrix projection, Vector3 position, Vector4 clippingPlane)
