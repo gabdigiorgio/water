@@ -34,6 +34,9 @@ namespace Water
 
         private TorusPrimitive _torus;
         private Matrix _torusWorld;
+
+        private BoxPrimitive _box;
+        private Matrix _boxWorld;
         
         private Effect _blinnPhongShader;
         
@@ -83,6 +86,11 @@ namespace Water
             const float torusRotationX = MathF.PI/2;
             var torusPosition = new Vector3(150f, 0f, 0f);
             _torusWorld = Matrix.CreateScale(torusScale) * Matrix.CreateRotationX(torusRotationX) * Matrix.CreateTranslation(torusPosition);
+            
+            // Box
+            _box = new BoxPrimitive(GraphicsDevice,new Vector3(50f, 50f, 50f), null);
+            var boxPosition = new Vector3(-150f, 0f, 0f);
+            _boxWorld = Matrix.CreateTranslation(boxPosition);
             
             // Quad
             _quad = new QuadPrimitive(GraphicsDevice);
@@ -143,6 +151,8 @@ namespace Water
             DrawTeapot(_teapotWorld, _freeCamera.View, _freeCamera.Projection, _freeCamera.Position, Vector4.Zero);
 
             DrawTorus(_torusWorld, _freeCamera.View, _freeCamera.Projection, _freeCamera.Position, Vector4.Zero);
+            
+            DrawBox(_boxWorld, _freeCamera.View, _freeCamera.Projection, _freeCamera.Position, Vector4.Zero);
 
             base.Draw(gameTime);
         }
@@ -194,6 +204,8 @@ namespace Water
             DrawTeapot(_teapotWorld, view, projection, position, clippingPlane);
             
             DrawTorus(_torusWorld, view, projection, position, clippingPlane);
+            
+            DrawBox(_boxWorld, view, projection, position, clippingPlane);
         }
         
                 
@@ -295,6 +307,41 @@ namespace Water
             _blinnPhongShader.Parameters["Shininess"].SetValue(32f);
             
             _torus.Draw(_blinnPhongShader);
+
+            GraphicsDevice.RasterizerState = previousRasterizerState;
+        }
+        
+        private void DrawBox(Matrix world, Matrix view, Matrix projection, Vector3 position, Vector4 clippingPlane)
+        {
+            var previousRasterizerState = GraphicsDevice.RasterizerState;
+            GraphicsDevice.RasterizerState = RasterizerState.CullNone;
+            
+            _blinnPhongShader.CurrentTechnique = _blinnPhongShader.Techniques["BasicColorDrawing"];
+            
+            _blinnPhongShader.Parameters["ClippingPlane"]?.SetValue(clippingPlane);
+            
+            _blinnPhongShader.Parameters["Color"].SetValue(Color.Red.ToVector3());
+            
+            _blinnPhongShader.Parameters["World"].SetValue(world);
+            _blinnPhongShader.Parameters["View"].SetValue(view);
+            _blinnPhongShader.Parameters["Projection"].SetValue(projection);
+            _blinnPhongShader.Parameters["InverseTransposeWorld"].SetValue(Matrix.Invert(Matrix.Transpose(world)));
+            
+            _blinnPhongShader.Parameters["AmbientColor"].SetValue(Color.White.ToVector3());
+            _blinnPhongShader.Parameters["KAmbient"].SetValue(0.3f);
+            
+            _blinnPhongShader.Parameters["LightPosition"].SetValue(_lightPosition);
+            
+            _blinnPhongShader.Parameters["DiffuseColor"].SetValue(Color.White.ToVector3());
+            _blinnPhongShader.Parameters["KDiffuse"].SetValue(0.7f);
+            
+            _blinnPhongShader.Parameters["EyePosition"].SetValue(position);
+            
+            _blinnPhongShader.Parameters["SpecularColor"].SetValue(Color.White.ToVector3());
+            _blinnPhongShader.Parameters["KSpecular"].SetValue(1f);
+            _blinnPhongShader.Parameters["Shininess"].SetValue(32f);
+            
+            _box.Draw(_blinnPhongShader);
 
             GraphicsDevice.RasterizerState = previousRasterizerState;
         }
