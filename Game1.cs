@@ -21,8 +21,7 @@ namespace Water
         // Camera
         private FreeCamera _freeCamera;
         private readonly Vector3 _cameraInitialPosition = new(0f, 50f, 300f);
-        
-        private readonly Vector3 _lightPosition = new(500f, 50f, 300f);
+        private readonly Vector3 _lightPosition = new(500f, 500f, 300f);
         
         // Skybox
         private SkyBox _skyBox;
@@ -95,7 +94,7 @@ namespace Water
             // Quad
             _quad = new QuadPrimitive(GraphicsDevice);
             var quadPosition = new Vector3(0f, QuadHeight, 0f);
-            _quadWorld = Matrix.CreateScale(300f, 0f, 300f) * Matrix.CreateTranslation(quadPosition);
+            _quadWorld = Matrix.CreateScale(3000f, 0f, 3000f) * Matrix.CreateTranslation(quadPosition);
             
             _reflectionRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width, 
                 GraphicsDevice.Viewport.Height, 
@@ -225,7 +224,7 @@ namespace Water
             _waterShader.Parameters["RefractionTexture"]?.SetValue(_refractionRenderTarget);
             _waterShader.Parameters["DistortionMap"].SetValue(_distortionMap);
             _waterShader.Parameters["NormalMap"]?.SetValue(_normalMap);
-            _waterShader.Parameters["Tiling"].SetValue(Vector2.One * 2f);
+            _waterShader.Parameters["Tiling"].SetValue(Vector2.One * 20f);
             
             _waterShader.Parameters["MoveFactor"].SetValue(WaveSpeed * (float)gameTime.TotalGameTime.TotalSeconds);
             _waterShader.Parameters["WaveStrength"].SetValue(0.01f);
@@ -233,8 +232,8 @@ namespace Water
             _waterShader.Parameters["CameraPosition"].SetValue(_freeCamera.Position);
             _waterShader.Parameters["LightPosition"].SetValue(_lightPosition);
             _waterShader.Parameters["LightColor"].SetValue(Color.White.ToVector3());
-            _waterShader.Parameters["ShineDamper"].SetValue(5f);
-            _waterShader.Parameters["Reflectivity"].SetValue(0.6f);
+            _waterShader.Parameters["Shininess"].SetValue(25f);
+            _waterShader.Parameters["KSpecular"].SetValue(0.3f);
             
             _quad.Draw(_waterShader);
             

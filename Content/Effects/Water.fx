@@ -7,8 +7,8 @@
 #define PS_SHADERMODEL ps_4_0_level_9_3
 #endif
 
-float ShineDamper; // 20.0
-float Reflectivity; // 0.6
+float KSpecular;
+float Shininess;
 float3 LightPosition;
 float3 LightColor;
 float3 CameraPosition;
@@ -152,23 +152,23 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     float4 refractionColor = tex2D(refractionSampler, refractionTex);
     
     // Fresnel
-    float3 viewVector = normalize(CameraPosition - input.WorldPosition.xyz);
-    float refractiveFactor = dot(viewVector, normalize(input.Normal.xyz));
+    float3 viewDirection = normalize(CameraPosition - input.WorldPosition.xyz);
+    float refractiveFactor = dot(viewDirection, normalize(input.Normal.xyz));
     
     // Light 
     float4 normalMapColor = tex2D(normalMapSampler, distortedTexCoords);
     float3 normal = float3(normalMapColor.r * 2.0 - 1.0, normalMapColor.b, normalMapColor.g * 2.0 - 1.0);
     normal = normalize(normal);
     
-    float lightDirection = normalize(input.WorldPosition.xyz - LightPosition);
+    float3 lightDirection = normalize(LightPosition - input.WorldPosition.xyz);
+    float3 halfVector = normalize(lightDirection + viewDirection);
     
-    float3 reflectedLight = reflect(lightDirection, normal);
-    float specular = saturate(dot(reflectedLight, viewVector));
-    specular = pow(specular, ShineDamper);
-    float3 specularHighlights = LightColor * specular * Reflectivity;
+    float NdotL = saturate(dot(normal, lightDirection));
+    float NdotH = saturate(dot(normal, halfVector));
+    float3 specularLight = sign(NdotL) * KSpecular * LightColor * pow(NdotH, Shininess);
     
     // Final calculation
-    float4 finalColor = lerp(reflectionColor, refractionColor, refractiveFactor) + float4(specularHighlights, 0.0);
+    float4 finalColor = lerp(reflectionColor, refractionColor, refractiveFactor) + float4(specularLight, 0.0);
     return finalColor;
 }
 
