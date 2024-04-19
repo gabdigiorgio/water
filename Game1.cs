@@ -28,14 +28,18 @@ namespace Water
         private SkyBox _skyBox;
         private const int SkyBoxSize = 2000;
         
-        // Teapot
+        // Geometries
         private TeapotPrimitive _teapot;
         private Matrix _teapotWorld;
+
+        private TorusPrimitive _torus;
+        private Matrix _torusWorld;
+        
         private Effect _blinnPhongShader;
         
         // Water
         private QuadPrimitive _quad;
-        private const float QuadHeight = 40f;
+        private const float QuadHeight = 0f;
         private Matrix _quadWorld;
         private Effect _waterShader;
         private Texture2D _distortionMap;
@@ -70,8 +74,15 @@ namespace Water
             
             // Teapot
             _teapot = new TeapotPrimitive(GraphicsDevice, 100f, 16);
-            var teapotPosition = new Vector3(0f, 50f, 0f);
+            var teapotPosition = new Vector3(0f, 35f, 0f);
             _teapotWorld = Matrix.CreateRotationY(MathF.PI/2) * Matrix.CreateTranslation(teapotPosition);
+            
+            // Torus
+            _torus = new TorusPrimitive(GraphicsDevice, 10f, 6f, 64);
+            var torusScale = new Vector3(5f, 5f, 5f);
+            const float torusRotationX = MathF.PI/2;
+            var torusPosition = new Vector3(150f, 0f, 0f);
+            _torusWorld = Matrix.CreateScale(torusScale) * Matrix.CreateRotationX(torusRotationX) * Matrix.CreateTranslation(torusPosition);
             
             // Quad
             _quad = new QuadPrimitive(GraphicsDevice);
@@ -131,6 +142,8 @@ namespace Water
             
             DrawTeapot(_teapotWorld, _freeCamera.View, _freeCamera.Projection, _freeCamera.Position, Vector4.Zero);
 
+            DrawTorus(_torusWorld, _freeCamera.View, _freeCamera.Projection, _freeCamera.Position, Vector4.Zero);
+
             base.Draw(gameTime);
         }
         
@@ -140,7 +153,7 @@ namespace Water
             GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.CornflowerBlue, 1f, 0);
             
             // Draw the scene
-            DrawScene(_teapotWorld, _freeCamera.View, _freeCamera.Projection, _freeCamera.Position, _refractionClippingPlane);
+            DrawScene(_freeCamera.View, _freeCamera.Projection, _freeCamera.Position, _refractionClippingPlane);
             
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
             GraphicsDevice.SetRenderTarget(null);
@@ -165,7 +178,7 @@ namespace Water
                 reflectionCamPos + reflectionCamForward, reflectionCamUp);
             
             // Draw the scene
-            DrawScene(_teapotWorld, reflectionCamView, projection, reflectionCamPos, _reflectionClippingPlane);
+            DrawScene(reflectionCamView, projection, reflectionCamPos, _reflectionClippingPlane);
             
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
             GraphicsDevice.SetRenderTarget(null);
@@ -174,11 +187,13 @@ namespace Water
             DrawWater(world, view, projection, reflectionCamView, gameTime);
         }
 
-        private void DrawScene(Matrix world, Matrix view, Matrix projection, Vector3 position, Vector4 clippingPlane)
+        private void DrawScene(Matrix view, Matrix projection, Vector3 position, Vector4 clippingPlane)
         {
             DrawSkyBox(view, projection, position);
             
-            DrawTeapot(world, view, projection, position, clippingPlane);
+            DrawTeapot(_teapotWorld, view, projection, position, clippingPlane);
+            
+            DrawTorus(_torusWorld, view, projection, position, clippingPlane);
         }
         
                 
@@ -245,6 +260,41 @@ namespace Water
             _blinnPhongShader.Parameters["Shininess"].SetValue(32f);
             
             _teapot.Draw(_blinnPhongShader);
+
+            GraphicsDevice.RasterizerState = previousRasterizerState;
+        }
+
+        private void DrawTorus(Matrix world, Matrix view, Matrix projection, Vector3 position, Vector4 clippingPlane)
+        {
+            var previousRasterizerState = GraphicsDevice.RasterizerState;
+            GraphicsDevice.RasterizerState = RasterizerState.CullNone;
+            
+            _blinnPhongShader.CurrentTechnique = _blinnPhongShader.Techniques["BasicColorDrawing"];
+            
+            _blinnPhongShader.Parameters["ClippingPlane"]?.SetValue(clippingPlane);
+            
+            _blinnPhongShader.Parameters["Color"].SetValue(Color.Blue.ToVector3());
+            
+            _blinnPhongShader.Parameters["World"].SetValue(world);
+            _blinnPhongShader.Parameters["View"].SetValue(view);
+            _blinnPhongShader.Parameters["Projection"].SetValue(projection);
+            _blinnPhongShader.Parameters["InverseTransposeWorld"].SetValue(Matrix.Invert(Matrix.Transpose(world)));
+            
+            _blinnPhongShader.Parameters["AmbientColor"].SetValue(Color.White.ToVector3());
+            _blinnPhongShader.Parameters["KAmbient"].SetValue(0.3f);
+            
+            _blinnPhongShader.Parameters["LightPosition"].SetValue(_lightPosition);
+            
+            _blinnPhongShader.Parameters["DiffuseColor"].SetValue(Color.White.ToVector3());
+            _blinnPhongShader.Parameters["KDiffuse"].SetValue(0.7f);
+            
+            _blinnPhongShader.Parameters["EyePosition"].SetValue(position);
+            
+            _blinnPhongShader.Parameters["SpecularColor"].SetValue(Color.White.ToVector3());
+            _blinnPhongShader.Parameters["KSpecular"].SetValue(1f);
+            _blinnPhongShader.Parameters["Shininess"].SetValue(32f);
+            
+            _torus.Draw(_blinnPhongShader);
 
             GraphicsDevice.RasterizerState = previousRasterizerState;
         }
