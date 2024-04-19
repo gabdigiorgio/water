@@ -35,6 +35,7 @@ namespace Water
         
         // Water
         private QuadPrimitive _quad;
+        private const float QuadHeight = 40f;
         private Matrix _quadWorld;
         private Effect _waterShader;
         private Texture2D _distortionMap;
@@ -43,9 +44,11 @@ namespace Water
         
         // Reflection
         private RenderTarget2D _reflectionRenderTarget;
+        private readonly Vector4 _reflectionClippingPlane = new(0f, 1f, 0f, -QuadHeight);
         
         // Refraction
         private RenderTarget2D _refractionRenderTarget;
+        private readonly Vector4 _refractionClippingPlane = new(0f, -1f, 0f, QuadHeight);
 
         public Game1()
         {
@@ -72,7 +75,8 @@ namespace Water
             
             // Quad
             _quad = new QuadPrimitive(GraphicsDevice);
-            _quadWorld = Matrix.CreateScale(300f, 0f, 300f) * Matrix.CreateTranslation(Vector3.Zero);
+            var quadPosition = new Vector3(0f, QuadHeight, 0f);
+            _quadWorld = Matrix.CreateScale(300f, 0f, 300f) * Matrix.CreateTranslation(quadPosition);
             
             _reflectionRenderTarget = new RenderTarget2D(GraphicsDevice, GraphicsDevice.Viewport.Width, 
                 GraphicsDevice.Viewport.Height, 
@@ -88,7 +92,7 @@ namespace Water
         protected override void LoadContent()
         {
             var skyBox = Content.Load<Model>(ContentFolder3D + "skybox/cube");
-            var skyBoxTexture = Content.Load<TextureCube>(ContentFolderTextures + "/skyboxes/stormday_skybox");
+            var skyBoxTexture = Content.Load<TextureCube>(ContentFolderTextures + "/skyboxes/mountain_skybox");
             var skyBoxEffect = Content.Load<Effect>(ContentFolderEffects + "SkyBox");
             _skyBox = new SkyBox(skyBox, skyBoxTexture, skyBoxEffect, SkyBoxSize);
             
@@ -125,7 +129,7 @@ namespace Water
             
             DrawSkyBox(_freeCamera.View, _freeCamera.Projection, _freeCamera.Position);
             
-            DrawTeapot(_teapotWorld, _freeCamera.View, _freeCamera.Projection, _freeCamera.Position);
+            DrawTeapot(_teapotWorld, _freeCamera.View, _freeCamera.Projection, _freeCamera.Position, Vector4.Zero);
 
             base.Draw(gameTime);
         }
@@ -136,7 +140,7 @@ namespace Water
             GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.CornflowerBlue, 1f, 0);
             
             // Draw the scene
-            DrawScene(_teapotWorld, _freeCamera.View, _freeCamera.Projection, _freeCamera.Position);
+            DrawScene(_teapotWorld, _freeCamera.View, _freeCamera.Projection, _freeCamera.Position, _refractionClippingPlane);
             
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
             GraphicsDevice.SetRenderTarget(null);
@@ -161,7 +165,7 @@ namespace Water
                 reflectionCamPos + reflectionCamForward, reflectionCamUp);
             
             // Draw the scene
-            DrawScene(_teapotWorld, reflectionCamView, projection, reflectionCamPos);
+            DrawScene(_teapotWorld, reflectionCamView, projection, reflectionCamPos, _reflectionClippingPlane);
             
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
             GraphicsDevice.SetRenderTarget(null);
@@ -170,11 +174,11 @@ namespace Water
             DrawWater(world, view, projection, reflectionCamView, gameTime);
         }
 
-        private void DrawScene(Matrix world, Matrix view, Matrix projection, Vector3 position)
+        private void DrawScene(Matrix world, Matrix view, Matrix projection, Vector3 position, Vector4 clippingPlane)
         {
             DrawSkyBox(view, projection, position);
             
-            DrawTeapot(world, view, projection, position);
+            DrawTeapot(world, view, projection, position, clippingPlane);
         }
         
                 
@@ -210,12 +214,14 @@ namespace Water
             GraphicsDevice.RasterizerState = previousRasterizerState;
         }
         
-        private void DrawTeapot(Matrix world, Matrix view, Matrix projection, Vector3 position)
+        private void DrawTeapot(Matrix world, Matrix view, Matrix projection, Vector3 position, Vector4 clippingPlane)
         {
             var previousRasterizerState = GraphicsDevice.RasterizerState;
             GraphicsDevice.RasterizerState = RasterizerState.CullNone;
             
             _blinnPhongShader.CurrentTechnique = _blinnPhongShader.Techniques["BasicColorDrawing"];
+            
+            _blinnPhongShader.Parameters["ClippingPlane"]?.SetValue(clippingPlane);
             
             _blinnPhongShader.Parameters["Color"].SetValue(Color.Green.ToVector3());
             

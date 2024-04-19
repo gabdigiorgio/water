@@ -7,6 +7,10 @@
 #define PS_SHADERMODEL ps_4_0_level_9_3
 #endif
 
+const float4 plane = float4(0.0, 1.0, 0.0, 0.0);
+
+float4 ClippingPlane;
+
 // Matrices
 float4x4 World;
 float4x4 View;
@@ -40,6 +44,7 @@ struct VertexShaderOutput
     float4 Position : POSITION0;
     float3 WorldPosition : TEXCOORD0;
     float3 Normal : TEXCOORD1;
+    float4 Clipping : TEXCOORD2;
 };
  
 VertexShaderOutput MainVS(VertexShaderInput input)
@@ -51,12 +56,16 @@ VertexShaderOutput MainVS(VertexShaderInput input)
     output.Position = mul(viewPosition, Projection);
     output.WorldPosition = worldPosition;
     output.Normal = mul(input.Normal, InverseTransposeWorld);
+    
+    output.Clipping = dot(worldPosition, ClippingPlane);
  
     return output;
 }
  
 float4 MainPS(VertexShaderOutput input) : COLOR0
 {
+    clip(input.Clipping);
+    
     float3 lightDirection = normalize(LightPosition - input.WorldPosition);
     float3 viewDirection = normalize(EyePosition - input.WorldPosition);
     float3 halfVector = normalize(lightDirection + viewDirection); 
