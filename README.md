@@ -3,7 +3,8 @@ This is a simple water shader for Monogame 3.8.1 using planar reflections, Fresn
 
 ## Demo
 Video demo: https://youtu.be/ICX9RCThTH8
-![readme](https://github.com/gabdigiorgio/water/assets/102607654/c8d04f08-01b0-4863-8c4a-ce5e64fed24c)
+![readme](https://github.com/gabdigiorgio/water/assets/102607654/7898f015-b800-4840-b645-15c3e1ccc914)
+
 
 ## Mouse + keyboard controls:
 ### Camera
