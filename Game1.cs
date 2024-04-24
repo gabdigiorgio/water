@@ -174,8 +174,10 @@ namespace Water
             GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.CornflowerBlue, 1f, 0);
             
             var quadNormal = Vector3.Up;
+
+            var viewDirection = _freeCamera.Position - _quadWorld.Translation;
             
-            var projLength = Vector3.Dot(quadNormal, _freeCamera.Position - _quadWorld.Translation);
+            var projLength = Vector3.Dot(quadNormal, viewDirection);
 
             var reflectionCamPos = _freeCamera.Position - 2 * quadNormal * projLength;
 
