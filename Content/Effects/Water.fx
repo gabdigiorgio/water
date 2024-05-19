@@ -143,7 +143,7 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     
     float2 distortedTexCoords = tex2D(distortionSampler, float2(input.TextureCoordinates.x + MoveFactor, input.TextureCoordinates.y)) * 0.01;
     distortedTexCoords = input.TextureCoordinates + float2(distortedTexCoords.x, distortedTexCoords.y + MoveFactor);
-    float2 totalDistortion = tex2D(distortionSampler, distortedTexCoords) * WaveStrength;
+    float2 totalDistortion = (tex2D(distortionSampler, distortedTexCoords).rg * 2.0 - 1.0) * WaveStrength;
     
     reflectionTex += totalDistortion;
     refractionTex += totalDistortion;

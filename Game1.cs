@@ -164,7 +164,7 @@ namespace Water
             // Draw the scene
             DrawScene(_freeCamera.View, _freeCamera.Projection, _freeCamera.Position, _refractionClippingPlane);
             
-            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+            //GraphicsDevice.DepthStencilState = DepthStencilState.Default;
             GraphicsDevice.SetRenderTarget(null);
         }
         
@@ -191,7 +191,7 @@ namespace Water
             // Draw the scene
             DrawScene(reflectionCamView, projection, reflectionCamPos, _reflectionClippingPlane);
             
-            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+            //GraphicsDevice.DepthStencilState = DepthStencilState.Default;
             GraphicsDevice.SetRenderTarget(null);
             
             // Draw the water
