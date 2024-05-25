@@ -113,7 +113,7 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     float4 refractionTexCoord;
     refractionTexCoord = input.RefractionPosition;
     
-    // Screen position
+    // Normalized device coordinates
     refractionTexCoord.xy /= refractionTexCoord.w;
     
     // Adjust offset
@@ -125,7 +125,7 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     float4 reflectionTexCoord;
     reflectionTexCoord = input.ReflectionPosition;
     
-    // Screen position
+    // Normalized device coordinates
     reflectionTexCoord.xy /= reflectionTexCoord.w;
     
     // Adjust offset
