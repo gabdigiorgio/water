@@ -109,7 +109,6 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 float4 MainPS(VertexShaderOutput input) : COLOR
 {     
     // Refraction
-    
     float4 refractionTexCoord;
     refractionTexCoord = input.RefractionPosition;
     
@@ -121,7 +120,6 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     refractionTexCoord.y = -0.5f * refractionTexCoord.y + 0.5f;
     
     // Reflection
-    
     float4 reflectionTexCoord;
     reflectionTexCoord = input.ReflectionPosition;
     
@@ -133,7 +131,6 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     reflectionTexCoord.y = -0.5f * reflectionTexCoord.y + 0.5f; 
     
     // Reflection and refraction colors
-    
     float2 distortedTexCoords = tex2D(distortionSampler, float2(input.TextureCoordinates.x + MoveFactor, input.TextureCoordinates.y)) * 0.01;
     distortedTexCoords = input.TextureCoordinates + float2(distortedTexCoords.x, distortedTexCoords.y + MoveFactor);
     float2 totalDistortion = (tex2D(distortionSampler, distortedTexCoords).rg * 2.0 - 1.0) * WaveStrength;
