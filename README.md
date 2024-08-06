@@ -13,3 +13,5 @@ Video demo: https://youtu.be/ICX9RCThTH8
 - `S` Backward
 - `D` Right
 - `Right Click` Rotate
+
+### [Explanation on how it works](https://medium.com/@gabriel.enrique.digiorgio/how-to-create-water-shader-in-monogame-xna-0a7e82092c85)
